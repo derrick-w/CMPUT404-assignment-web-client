@@ -41,13 +41,38 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
+        temp = data.split()
+        if(len(temp) > 0):
+            return int(temp[1])
         return None
 
     def get_headers(self,data):
         return None
 
     def get_body(self, data):
+        temp = data.split("\r\n\r\n")
+        if(len(temp) >= 2):
+            return temp[1]
         return None
+
+    def get_url_info(self, url):
+        parsed_url = urllib.parse.urlparse(url)
+
+        host = parsed_url.hostname
+        path = parsed_url.path
+
+        if path == "":
+            path = "/"
+
+        if (parsed_url.query):
+            path += "?" + parsed_url.query
+
+        if (parsed_url.port):
+            port = parsed_url.port
+        else:
+            port = 80
+
+        return host, path, port
     
     def sendall(self, data):
         self.socket.sendall(data.encode('utf-8'))
@@ -70,11 +95,31 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         code = 500
         body = ""
+
+        host, path, port = self.get_url_info(url)
+
+        self.connect(host, port)
+
+        payload = "GET {} HTTP/1.1\r\nHost: {}\r\n\r\n".format(path, host)
+
+        self.sendall(payload)
+        full_data = self.recvall(self.socket)
+        self.close()
+    
+        code = self.get_code(full_data)
+        body = self.get_body(full_data)
+
+        print(body)
+       
         return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
         code = 500
         body = ""
+
+        # host, path, port = self.get_url_info(url)
+        # self.connect(host, port)
+
         return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
