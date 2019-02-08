@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Copyright 2019 Derrick Wai
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,7 +98,6 @@ class HTTPClient(object):
         body = ""
 
         host, path, port = self.get_url_info(url)
-
         self.connect(host, port)
 
         payload = "GET {} HTTP/1.1\r\nHost: {}\r\n\r\n".format(path, host)
@@ -117,8 +117,25 @@ class HTTPClient(object):
         code = 500
         body = ""
 
-        # host, path, port = self.get_url_info(url)
-        # self.connect(host, port)
+        host, path, port = self.get_url_info(url)
+        self.connect(host, port)
+        post_data = ""
+
+        if args:
+            for val in args.keys():
+                post_data += "{}={}&".format(val, args[val])
+            post_data = post_data[:-1]
+
+        payload = "POST {} HTTP/1.1\r\nHost: {}\r\nContent-Type: application/x-www-form-urlencoded\r\nContent-Length: {}\r\n\r\n{}\r\n\r\n".format(path, host, len(post_data), post_data)
+
+        self.sendall(payload)
+        full_data = self.recvall(self.socket)
+        self.close()
+    
+        code = self.get_code(full_data)
+        body = self.get_body(full_data)
+
+        print (body)
 
         return HTTPResponse(code, body)
 
